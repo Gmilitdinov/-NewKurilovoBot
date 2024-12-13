@@ -49,7 +49,7 @@ def start_game(message):
     markup = telebot.types.InlineKeyboardMarkup()
     markup.add(telebot.types.InlineKeyboardButton(
         text="Играть в шашки", 
-        web_app={"url": "https://github.com/Gmilitdinov/telegram-checkers/"}
+        web_app={"url": "https://gmilitdinov.github.io/telegram-checkers/"}
     ))
     bot.send_message(
         message.chat.id,
