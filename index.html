@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Шашки</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        .board {
+            display: grid;
+            grid-template-columns: repeat(8, 40px);
+            grid-template-rows: repeat(8, 40px);
+            gap: 1px;
+            background: #769656;
+            padding: 10px;
+            margin: 20px auto;
+        }
+        .cell {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+        .cell-white { background: #eeeed2; }
+        .cell-black { background: #769656; }
+        .piece {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+        }
+        .piece-black { background: #000; }
+        .piece-white { background: #fff; }
+    </style>
+</head>
+<body>
+    <div id="board" class="board"></div>
+    <script>
+        let tg = window.Telegram.WebApp;
+        tg.expand();
+
+        const board = document.getElementById('board');
+        let selectedPiece = null;
+        let currentPlayer = 'black';
+
+        function createBoard() {
+            for (let i = 0; i < 8; i++) {
+                for (let j = 0; j < 8; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = `cell ${(i + j) % 2 === 0 ? 'cell-white' : 'cell-black'}`;
+                    cell.dataset.row = i;
+                    cell.dataset.col = j;
+                    
+                    // Добавляем начальные шашки
+                    if ((i + j) % 2 !== 0) {
+                        if (i < 3) {
+                            const piece = document.createElement('div');
+                            piece.className = 'piece piece-black';
+                            cell.appendChild(piece);
+                        } else if (i > 4) {
+                            const piece = document.createElement('div');
+                            piece.className = 'piece piece-white';
+                            cell.appendChild(piece);
+                        }
+                    }
+                    
+                    cell.addEventListener('click', handleCellClick);
+                    board.appendChild(cell);
+                }
+            }
+        }
+
+        function handleCellClick(e) {
+            const cell = e.target.closest('.cell');
+            const piece = cell.querySelector('.piece');
+
+            if (!selectedPiece && piece) {
+                const pieceColor = piece.classList.contains('piece-black') ? 'black' : 'white';
+                if (pieceColor === currentPlayer) {
+                    selectedPiece = cell;
+                    cell.style.backgroundColor = '#baca44';
+                }
+            } else if (selectedPiece) {
+                if (isValidMove(selectedPiece, cell)) {
+                    movePiece(selectedPiece, cell);
+                    currentPlayer = currentPlayer === 'black' ? 'white' : 'black';
+                }
+                selectedPiece.style.backgroundColor = '';
+                selectedPiece = null;
+            }
+        }
+
+        function isValidMove(from, to) {
+            const fromRow = parseInt(from.dataset.row);
+            const fromCol = parseInt(from.dataset.col);
+            const toRow = parseInt(to.dataset.row);
+            const toCol = parseInt(to.dataset.col);
+            
+            // Базовая проверка хода
+            return Math.abs(fromRow - toRow) === 1 && Math.abs(fromCol - toCol) === 1;
+        }
+
+        function movePiece(from, to) {
+            const piece = from.querySelector('.piece');
+            from.removeChild(piece);
+            to.appendChild(piece);
+        }
+
+        createBoard();
+    </script>
+</body>
+</html> 
