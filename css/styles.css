@@ -1,0 +1,236 @@
+:root {
+    --cell-size: min(40px, calc(90vw / 9));
+    --piece-size: calc(var(--cell-size) * 0.75);
+}
+
+body {
+    margin: 0;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    background: #f0f0f0;
+}
+
+.board {
+    display: grid;
+    grid-template-columns: repeat(8, var(--cell-size));
+    grid-template-rows: repeat(8, var(--cell-size));
+    gap: 1px;
+    background: #769656;
+    padding: 10px;
+    margin: 20px auto;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+}
+
+.cell {
+    width: var(--cell-size);
+    height: var(--cell-size);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.cell-white { background: #eeeed2; }
+.cell-black { background: #769656; }
+
+.piece {
+    width: var(--piece-size);
+    height: var(--piece-size);
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s;
+}
+
+.piece:hover {
+    transform: scale(1.1);
+}
+
+.piece-black { 
+    background: #000;
+    border: 2px solid #333;
+}
+
+.piece-white { 
+    background: #fff;
+    border: 2px solid #ccc;
+}
+
+.piece.king::after {
+    content: '♔';
+    position: absolute;
+    font-size: calc(var(--piece-size) * 0.7);
+    color: gold;
+    text-shadow: 0 0 2px #000;
+}
+
+.piece-white.king::after {
+    color: goldenrod;
+}
+
+.game-info {
+    text-align: center;
+    margin: 20px;
+    font-size: 18px;
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    width: min(90%, 300px);
+}
+
+.color-selection {
+    margin-bottom: 20px;
+    padding: 15px;
+    border-bottom: 1px solid #eee;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.color-btn {
+    padding: 10px 20px;
+    margin: 5px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 16px;
+    width: 200px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#playWhite {
+    background: #fff;
+    color: #000;
+    border: 2px solid #ccc;
+    font-weight: bold;
+}
+
+#playBlack {
+    background: #000;
+    color: #fff;
+    border: 2px solid #333;
+    font-weight: bold;
+}
+
+.color-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    opacity: 0.9;
+}
+
+.hidden {
+    display: none;
+}
+
+.game-over {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.3);
+    text-align: center;
+    z-index: 1000;
+}
+
+.new-game-btn {
+    padding: 10px 20px;
+    margin-top: 15px;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.new-game-btn:hover {
+    background: #45a049;
+}
+
+.total-score {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+}
+
+.login-form {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.3);
+    text-align: center;
+    z-index: 1000;
+    width: 300px;
+}
+
+.login-form input {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 16px;
+}
+
+.login-form button {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.leaderboard {
+    margin-top: 20px;
+    text-align: left;
+}
+
+.leaderboard-item {
+    padding: 5px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.player-info {
+    background: #f8f9fa;
+    padding: 10px;
+    margin-bottom: 15px;
+    border-radius: 5px;
+    border: 1px solid #dee2e6;
+}
+
+.current-player {
+    font-size: 16px;
+    color: #2c3e50;
+}
+
+.current-player div {
+    margin: 5px 0;
+}
+
+.current-player div:first-child {
+    font-weight: bold;
+    color: #2196F3;
+    font-size: 18px;
+}
+  
