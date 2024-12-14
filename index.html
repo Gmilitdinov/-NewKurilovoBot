@@ -31,17 +31,92 @@
         }
         .piece-black { background: #000; }
         .piece-white { background: #fff; }
+        .game-info {
+            text-align: center;
+            margin: 20px;
+            font-size: 18px;
+        }
+        .current-turn {
+            font-weight: bold;
+            color: #2196F3;
+        }
     </style>
 </head>
 <body>
+    <div class="game-info">
+        <div id="currentPlayer">Ходят белые</div>
+        <div>Сделано ходов:</div>
+        <div>Белые: <span id="whiteMoves">0</span></div>
+        <div>Черные: <span id="blackMoves">0</span></div>
+    </div>
     <div id="board" class="board"></div>
     <script>
         let tg = window.Telegram.WebApp;
         tg.expand();
 
         const board = document.getElementById('board');
+        const boardState = new Array(8).fill(null).map(() => new Array(8).fill(null));
         let selectedPiece = null;
-        let currentPlayer = 'black';
+        let currentPlayer = 'white';
+        let moveCount = {
+            white: 0,
+            black: 0
+        };
+        let mustCapture = false;
+        let availableCaptures = [];
+
+        const currentPlayerDisplay = document.getElementById('currentPlayer');
+        const whiteMovesDisplay = document.getElementById('whiteMoves');
+        const blackMovesDisplay = document.getElementById('blackMoves');
+
+        function updateGameInfo() {
+            currentPlayerDisplay.textContent = 
+                `Ходят ${currentPlayer === 'white' ? 'белые' : 'черные'}${mustCapture ? ' (Обязательное взятие!)' : ''}`;
+            whiteMovesDisplay.textContent = moveCount.white;
+            blackMovesDisplay.textContent = moveCount.black;
+        }
+
+        function checkForCaptures() {
+            availableCaptures = [];
+            for (let i = 0; i < 8; i++) {
+                for (let j = 0; j < 8; j++) {
+                    if (boardState[i][j]) {
+                        const pieceColor = boardState[i][j];
+                        if (pieceColor === currentPlayer) {
+                            if (hasCapture(i, j)) {
+                                availableCaptures.push([i, j]);
+                            }
+                        }
+                    }
+                }
+            }
+            
+            mustCapture = availableCaptures.length > 0;
+            return mustCapture;
+        }
+
+        function hasCapture(row, col) {
+            const directions = [
+                [-2, -2], [-2, 2],  // Для белых (вверх)
+                [2, -2], [2, 2]     // Для черных (вниз)
+            ];
+
+            for (let [dRow, dCol] of directions) {
+                const newRow = row + dRow;
+                const newCol = col + dCol;
+                const midRow = row + dRow/2;
+                const midCol = col + dCol/2;
+
+                if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
+                    if (!boardState[newRow][newCol] && boardState[midRow][midCol]) {
+                        if (boardState[midRow][midCol] !== currentPlayer) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
 
         function createBoard() {
             for (let i = 0; i < 8; i++) {
@@ -51,16 +126,17 @@
                     cell.dataset.row = i;
                     cell.dataset.col = j;
                     
-                    // Добавляем начальные шашки
                     if ((i + j) % 2 !== 0) {
                         if (i < 3) {
                             const piece = document.createElement('div');
                             piece.className = 'piece piece-black';
                             cell.appendChild(piece);
+                            boardState[i][j] = 'black';
                         } else if (i > 4) {
                             const piece = document.createElement('div');
                             piece.className = 'piece piece-white';
                             cell.appendChild(piece);
+                            boardState[i][j] = 'white';
                         }
                     }
                     
@@ -70,20 +146,34 @@
             }
         }
 
+        const cellSelector = row => col => document.querySelector(`.cell[data-row="${row}"][data-col="${col}"]`);
+
         function handleCellClick(e) {
             const cell = e.target.closest('.cell');
-            const piece = cell.querySelector('.piece');
+            if (!cell) return;
 
-            if (!selectedPiece && piece) {
-                const pieceColor = piece.classList.contains('piece-black') ? 'black' : 'white';
+            if (e.target.classList.contains('piece')) {
+                const pieceColor = e.target.classList.contains('piece-black') ? 'black' : 'white';
+                
                 if (pieceColor === currentPlayer) {
+                    if (mustCapture && !availableCaptures.includes(cell)) {
+                        console.log('Есть обязательное взятие другой шашкой!');
+                        return;
+                    }
+                    
+                    if (selectedPiece) {
+                        selectedPiece.style.backgroundColor = '';
+                    }
                     selectedPiece = cell;
                     cell.style.backgroundColor = '#baca44';
                 }
             } else if (selectedPiece) {
                 if (isValidMove(selectedPiece, cell)) {
                     movePiece(selectedPiece, cell);
+                    moveCount[currentPlayer]++;
                     currentPlayer = currentPlayer === 'black' ? 'white' : 'black';
+                    checkForCaptures();
+                    updateGameInfo();
                 }
                 selectedPiece.style.backgroundColor = '';
                 selectedPiece = null;
@@ -96,17 +186,78 @@
             const toRow = parseInt(to.dataset.row);
             const toCol = parseInt(to.dataset.col);
             
-            // Базовая проверка хода
-            return Math.abs(fromRow - toRow) === 1 && Math.abs(fromCol - toCol) === 1;
+            if (to.querySelector('.piece')) {
+                return false;
+            }
+            
+            const rowDiff = toRow - fromRow;
+            const colDiff = Math.abs(toCol - fromCol);
+            
+            if (mustCapture) {
+                if (Math.abs(rowDiff) !== 2 || colDiff !== 2) {
+                    console.log('Необходимо выполнить взятие!');
+                    return false;
+                }
+            }
+
+            // Проверяем направление движения
+            if (currentPlayer === 'black' && rowDiff <= 0) {
+                return false;
+            }
+            if (currentPlayer === 'white' && rowDiff >= 0) {
+                return false;
+            }
+            
+            // Простой ход (только если нет обязательного взятия)
+            if (!mustCapture && Math.abs(rowDiff) === 1 && colDiff === 1) {
+                return true;
+            }
+            
+            // Ход с взятием
+            if (Math.abs(rowDiff) === 2 && colDiff === 2) {
+                const midRow = (fromRow + toRow) / 2;
+                const midCol = (fromCol + toCol) / 2;
+                const midCell = cellSelector(midRow)(midCol);
+                const midPiece = midCell.querySelector('.piece');
+                
+                if (midPiece) {
+                    const midPieceColor = midPiece.classList.contains('piece-black') ? 'black' : 'white';
+                    return midPieceColor !== currentPlayer;
+                }
+            }
+            
+            return false;
         }
 
         function movePiece(from, to) {
+            const fromRow = parseInt(from.dataset.row);
+            const fromCol = parseInt(from.dataset.col);
+            const toRow = parseInt(to.dataset.row);
+            const toCol = parseInt(to.dataset.col);
+            
             const piece = from.querySelector('.piece');
+            if (!piece) return;
+            
+            if (Math.abs(toRow - fromRow) === 2) {
+                const midRow = (fromRow + toRow) / 2;
+                const midCol = (fromCol + toCol) / 2;
+                const midCell = cellSelector(midRow)(midCol);
+                const capturedPiece = midCell.querySelector('.piece');
+                if (capturedPiece) {
+                    midCell.removeChild(capturedPiece);
+                    boardState[midRow][midCol] = null;
+                }
+            }
+            
             from.removeChild(piece);
             to.appendChild(piece);
+            boardState[toRow][toCol] = boardState[fromRow][fromCol];
+            boardState[fromRow][fromCol] = null;
         }
 
         createBoard();
+        checkForCaptures();
+        updateGameInfo();
     </script>
 </body>
 </html> 
