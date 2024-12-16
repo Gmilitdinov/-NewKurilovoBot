@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "deploy": "git add . && git commit -m \"Auto-deploy: Update from local changes\" && git push origin main",
+    "watch": "nodemon --watch . --ext js,css,html --exec \"npm run deploy\""
   },
   "dependencies": {
     "express": "^4.17.1",
@@ -13,5 +15,8 @@
   },
   "engines": {
     "node": "16.x"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22"
   }
 } 
