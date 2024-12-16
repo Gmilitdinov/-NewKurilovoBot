@@ -20,6 +20,11 @@ class UI {
         this.opponentInfoDisplay.className = 'player-info';
         gameInfo.insertBefore(this.opponentInfoDisplay, this.totalScoreDisplay);
         
+        this.timerDisplay = document.createElement('div');
+        this.timerDisplay.className = 'timer';
+        gameInfo.insertBefore(this.timerDisplay, this.totalScoreDisplay);
+        this.timerInterval = null;
+        
         this.initEventListeners();
         this.showLoginForm();
     }
@@ -45,22 +50,31 @@ class UI {
         this.game.board.element.addEventListener('click', (e) => this.handleCellClick(e));
     }
 
-    hideColorSelection() {
-        console.log('Hiding color selection');
-        this.colorSelection.classList.add('hidden');
-    }
-
-    showColorSelection() {
-        console.log('Showing color selection');
-        this.colorSelection.classList.remove('hidden');
-    }
-
     updateGameInfo() {
         this.currentPlayerDisplay.textContent = 
-            `Ходят ${this.game.currentTurn === 'white' ? 'белые' : 'черные'}` +
+            `${this.game.currentTurn === 'white' ? 'Ходят белые' : 'Ходят черные'}` +
             `${this.game.mustCapture ? ' (Обязательное взятие!)' : ''}`;
-        this.whiteMovesDisplay.textContent = this.game.moveCount.white;
-        this.blackMovesDisplay.textContent = this.game.moveCount.black;
+
+        const movesInfo = document.createElement('div');
+        movesInfo.className = 'moves-info';
+        movesInfo.innerHTML = `
+            <div>
+                <div>Ходы белых:</div>
+                <div class="moves-count">${this.game.moveCount.white}</div>
+            </div>
+            <div>
+                <div>Ходы черных:</div>
+                <div class="moves-count">${this.game.moveCount.black}</div>
+            </div>
+        `;
+
+        this.whiteMovesDisplay.parentElement.replaceWith(movesInfo);
+
+        this.totalScoreDisplay.innerHTML = `
+            <div>Общий счет</div>
+            <div class="highlight">Белые: ${this.game.totalScore.white}</div>
+            <div class="highlight">Черные: ${this.game.totalScore.black}</div>
+        `;
     }
 
     handleCellClick(e) {
@@ -121,20 +135,25 @@ class UI {
         `;
     }
 
-    showGameOver(winner, player) {
+    showGameOver(winner, player, gameTime) {
         const gameOver = document.createElement('div');
         gameOver.className = 'game-over';
         
         gameOver.innerHTML = `
             <h2>Игра окончена!</h2>
-            <p>Игрок: ${player.username}</p>
-            <p>Противник: ${this.game.opponent.username}</p>
+            <div class="highlight">Игрок: ${player.username}</div>
+            <div class="highlight">Противник: ${this.game.opponent.username}</div>
             <p>Текущий рейтинг: ${player.rating || 0}</p>
-            <p>Победили ${winner === 'white' ? 'белые' : 'черные'}!</p>
+            <div class="highlight">Победили ${winner === 'white' ? 'белые' : 'черные'}!</div>
+            <div class="highlight">Время игры: ${gameTime}</div>
             <button class="new-game-btn">Новая игра</button>
         `;
 
         document.body.appendChild(gameOver);
+
+        if (this.timerInterval) {
+            clearInterval(this.timerInterval);
+        }
 
         gameOver.querySelector('.new-game-btn').addEventListener('click', () => {
             document.body.removeChild(gameOver);
@@ -155,11 +174,40 @@ class UI {
         const form = document.createElement('div');
         form.className = 'login-form';
         form.innerHTML = `
-            <h2>Введите ваше имя</h2>
-            <input type="text" id="username" placeholder="Имя игрока" required>
-            <button id="loginButton">Начать игру</button>
+            <h2>Шашки</h2>
+            <input type="text" id="username" placeholder="Ваше имя" required>
+            
+            <div class="game-settings">
+                <div class="difficulty-selection">
+                    <h3>Выберите сложность</h3>
+                    <select id="difficulty" class="difficulty-select">
+                        <option value="easy">Легкий</option>
+                        <option value="medium" selected>Средний</option>
+                        <option value="hard">Сложный</option>
+                    </select>
+                </div>
+                
+                <div class="color-selection">
+                    <h3>Выберите сторону</h3>
+                    <div class="color-buttons">
+                        <button id="selectWhite" class="color-btn" data-color="white">
+                            <span class="piece-preview white"></span>
+                            Играть белыми
+                        </button>
+                        <button id="selectBlack" class="color-btn" data-color="black">
+                            <span class="piece-preview black"></span>
+                            Играть черными
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <button id="loginButton" class="start-btn" disabled>
+                Начать игру
+            </button>
+            
             <div class="leaderboard">
-                <h3>Таблица лидеров</h3>
+                <h3>Лучшие игроки</h3>
                 <div id="leaderboardContent"></div>
             </div>
         `;
@@ -170,15 +218,43 @@ class UI {
         document.body.appendChild(this.loginForm);
         const loginButton = document.getElementById('loginButton');
         const usernameInput = document.getElementById('username');
+        const difficultySelect = document.getElementById('difficulty');
+        const whiteButton = document.getElementById('selectWhite');
+        const blackButton = document.getElementById('selectBlack');
+        let selectedColor = null;
+
+        // Пытаемся получить последнего игрока из localStorage
+        const lastPlayer = localStorage.getItem('lastPlayer');
+        if (lastPlayer) {
+            usernameInput.value = lastPlayer;
+        }
+
+        // Обработчики для кнопок выбора цвета
+        const handleColorSelect = (color) => {
+            selectedColor = color;
+            whiteButton.classList.toggle('selected', color === 'white');
+            blackButton.classList.toggle('selected', color === 'black');
+            loginButton.disabled = !usernameInput.value.trim() || !selectedColor;
+        };
+
+        whiteButton.addEventListener('click', () => handleColorSelect('white'));
+        blackButton.addEventListener('click', () => handleColorSelect('black'));
+
+        // Проверка валидности формы
+        usernameInput.addEventListener('input', () => {
+            loginButton.disabled = !usernameInput.value.trim() || !selectedColor;
+        });
 
         loginButton.addEventListener('click', async () => {
             const username = usernameInput.value.trim();
-            if (username) {
+            if (username && selectedColor) {
                 const player = await this.game.login(username);
                 if (player) {
+                    localStorage.setItem('lastPlayer', username);
+                    this.game.setDifficulty(difficultySelect.value);
                     this.loginForm.remove();
                     this.updatePlayerInfo(player);
-                    this.showColorSelection();
+                    this.game.start(selectedColor);
                 }
             }
         });
@@ -205,9 +281,9 @@ class UI {
         this.playerInfoDisplay.innerHTML = `
             <div class="current-player">
                 <div>Игрок: ${player.username}</div>
-                <div>Рейтинг: ${player.rating || 0}</div>
+                <div class="highlight">Рейтинг: ${player.rating || 0}</div>
                 <div>Всего игр: ${player.gamesPlayed || 0}</div>
-                <div>Побед: ${player.wins || 0}</div>
+                <div class="highlight">Побед: ${player.wins || 0}</div>
                 <div>Поражений: ${player.losses || 0}</div>
             </div>
         `;
@@ -232,5 +308,32 @@ class UI {
         if (this.game.continueTurn && this.game.selectedPiece) {
             this.game.selectedPiece.style.backgroundColor = '#baca44';
         }
+    }
+
+    startTimer() {
+        const startTime = new Date();
+        this.updateTimer(startTime);
+        
+        if (this.timerInterval) {
+            clearInterval(this.timerInterval);
+        }
+        
+        this.timerInterval = setInterval(() => {
+            this.updateTimer(startTime);
+        }, 1000);
+    }
+
+    updateTimer(startTime) {
+        const currentTime = new Date();
+        const timeDiff = currentTime - startTime;
+        const seconds = Math.floor(timeDiff / 1000);
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+        
+        this.timerDisplay.innerHTML = `
+            <div class="timer-display">
+                ⏱️ ${minutes}:${remainingSeconds.toString().padStart(2, '0')}
+            </div>
+        `;
     }
 } 

@@ -1,8 +1,3 @@
-:root {
-    --cell-size: min(40px, calc(90vw / 9));
-    --piece-size: calc(var(--cell-size) * 0.75);
-}
-
 body {
     margin: 0;
     padding: 15px;
@@ -15,8 +10,8 @@ body {
 
 .board {
     display: grid;
-    grid-template-columns: repeat(8, var(--cell-size));
-    grid-template-rows: repeat(8, var(--cell-size));
+    grid-template-columns: repeat(8, 40px);
+    grid-template-rows: repeat(8, 40px);
     gap: 1px;
     background: #769656;
     padding: 10px;
@@ -24,273 +19,293 @@ body {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     border-radius: 8px;
     transition: transform 0.3s ease;
-    transform-origin: center center;
 }
 
 .cell {
-    width: var(--cell-size);
-    height: var(--cell-size);
+    width: 40px;
+    height: 40px;
     display: flex;
     justify-content: center;
     align-items: center;
     cursor: pointer;
-    transition: background-color 0.2s, transform 0.3s ease;
-    transform-origin: center center;
+    transition: background-color 0.2s;
 }
 
-.cell-white { background: #eeeed2; }
-.cell-black { background: #769656; }
+.cell-white {
+    background: #eeeed2;
+}
+
+.cell-black {
+    background: #769656;
+}
 
 .piece {
-    position: relative;
-    width: var(--piece-size);
-    height: var(--piece-size);
+    width: 30px;
+    height: 30px;
     border-radius: 50%;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    transition: transform 0.2s, all 0.3s ease;
+    transition: transform 0.2s;
     cursor: pointer;
-    user-select: none;
-    transform-origin: center center;
 }
 
 .piece:hover {
     transform: scale(1.1);
 }
 
-.piece-black { 
+.piece-white {
+    background: #fff;
+    border: 2px solid #666;
+}
+
+.piece-black {
     background: #000;
     border: 2px solid #333;
 }
 
-.piece-white { 
-    background: #fff;
-    border: 2px solid #ccc;
-}
-
 .piece.king::after {
-    content: '♔';
+    content: '★';
     position: absolute;
-    font-size: calc(var(--piece-size) * 0.7);
-    color: gold;
-    text-shadow: 0 0 2px #000;
+    font-size: 18px;
+    color: #d4af37;
     display: flex;
     justify-content: center;
     align-items: center;
     width: 100%;
     height: 100%;
-    pointer-events: none;
-    z-index: 1;
 }
 
-.piece-white.king::after {
-    color: goldenrod;
-    text-shadow: 0 0 2px #333;
-}
-
-.game-info {
-    text-align: center;
-    margin: 20px;
-    font-size: 18px;
-    background: white;
-    padding: 15px;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    width: min(90%, 300px);
-}
-
-.color-selection {
-    margin-bottom: 20px;
-    padding: 15px;
-    border-bottom: 1px solid #eee;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-.color-btn {
-    padding: 10px 20px;
-    margin: 5px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: all 0.3s;
-    font-size: 16px;
-    width: 200px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-#playWhite {
-    background: #fff;
-    color: #000;
-    border: 2px solid #ccc;
-    font-weight: bold;
-}
-
-#playBlack {
-    background: #000;
-    color: #fff;
-    border: 2px solid #333;
-    font-weight: bold;
-}
-
-.color-btn:hover {
-    transform: scale(1.05);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    opacity: 0.9;
-}
-
-.hidden {
-    display: none;
-}
-
-.game-over {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: white;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 0 20px rgba(0,0,0,0.3);
-    text-align: center;
-    z-index: 1000;
-}
-
-.new-game-btn {
-    padding: 10px 20px;
-    margin-top: 15px;
-    background: #4CAF50;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background 0.3s;
-}
-
-.new-game-btn:hover {
-    background: #45a049;
-}
-
-.total-score {
-    margin-top: 15px;
-    padding-top: 15px;
-    border-top: 1px solid #eee;
-}
-
+/* Стили для формы входа */
 .login-form {
     position: fixed;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background: white;
+    width: 350px;
     padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 0 20px rgba(0,0,0,0.3);
-    text-align: center;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
     z-index: 1000;
-    width: 300px;
+}
+
+.login-form h2 {
+    color: #333;
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 24px;
 }
 
 .login-form input {
     width: 100%;
     padding: 10px;
     margin: 10px 0;
-    border: 1px solid #ccc;
-    border-radius: 5px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 16px;
+    box-sizing: border-box;
+}
+
+/* Стили для выбора сложности */
+.difficulty-selection {
+    margin: 15px 0;
+}
+
+.difficulty-selection h3 {
+    color: #333;
+    margin-bottom: 10px;
     font-size: 16px;
 }
 
-.login-form button {
+.difficulty-select {
     width: 100%;
     padding: 10px;
-    margin: 10px 0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 16px;
+    background: white;
+}
+
+/* Стили для выбора цвета */
+.color-selection {
+    margin: 15px 0;
+}
+
+.color-selection h3 {
+    color: #333;
+    margin-bottom: 10px;
+    font-size: 16px;
+}
+
+.color-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.color-btn {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.color-btn:hover {
+    background: #f5f5f5;
+}
+
+.color-btn.selected {
+    border-color: #4CAF50;
+    background: #f0f8f0;
+}
+
+/* Стили для кнопки начала игры */
+.start-btn {
+    width: 100%;
+    padding: 12px;
     background: #4CAF50;
     color: white;
     border: none;
-    border-radius: 5px;
-    cursor: pointer;
+    border-radius: 4px;
     font-size: 16px;
+    cursor: pointer;
+    margin-top: 15px;
 }
 
+.start-btn:disabled {
+    background: #cccccc;
+    cursor: not-allowed;
+}
+
+.start-btn:not(:disabled):hover {
+    background: #45a049;
+}
+
+/* Стили для таблицы лидеров */
 .leaderboard {
     margin-top: 20px;
-    text-align: left;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+}
+
+.leaderboard h3 {
+    color: #333;
+    margin-bottom: 10px;
+    font-size: 16px;
 }
 
 .leaderboard-item {
-    padding: 5px 0;
-    border-bottom: 1px solid #eee;
-}
-
-.player-info {
-    background: #f8f9fa;
-    padding: 10px;
-    margin-bottom: 15px;
-    border-radius: 5px;
-    border: 1px solid #dee2e6;
-}
-
-.current-player {
-    font-size: 16px;
-    color: #2c3e50;
-    padding: 10px;
-    background: #f8f9fa;
-    border-radius: 5px;
-    margin-bottom: 15px;
-}
-
-.current-player div {
+    padding: 8px;
     margin: 5px 0;
+    background: #f5f5f5;
+    border-radius: 4px;
 }
 
-.current-player div:nth-child(2) {
+/* Адаптивность для маленьких экранов */
+@media (max-width: 480px) {
+    .login-form {
+        width: 90%;
+        padding: 15px;
+    }
+    
+    .color-buttons {
+        flex-direction: column;
+    }
+}
+
+/* Стили для игровой информации */
+.game-info {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    width: min(90%, 400px);
+    margin: 20px auto;
+}
+
+/* Стили для таймера */
+.timer-display {
+    background: #ffebee;
+    color: #d32f2f;
+    padding: 15px;
+    border-radius: 8px;
+    font-size: 20px;
     font-weight: bold;
-    color: #e74c3c;
+    text-align: center;
+    margin: 10px 0;
+    border: 2px solid #ffcdd2;
 }
 
-.opponent {
+/* Стили для информации об игроках */
+.current-player {
+    background: #f5f5f5;
+    padding: 15px;
+    border-radius: 8px;
+    margin: 10px 0;
+}
+
+.current-player div:first-child {
+    color: #1976d2;
+    font-size: 18px;
+    font-weight: bold;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e0e0e0;
+    margin-bottom: 8px;
+}
+
+/* Стили для счета и ходов */
+#currentPlayer {
+    background: #e3f2fd;
+    color: #1976d2;
+    padding: 12px;
+    border-radius: 8px;
+    font-weight: bold;
+    margin: 10px 0;
+    text-align: center;
+    font-size: 16px;
+}
+
+.moves-info {
+    display: flex;
+    justify-content: space-around;
+    background: #f5f5f5;
+    padding: 12px;
+    border-radius: 8px;
+    margin: 10px 0;
+}
+
+.moves-info div {
+    text-align: center;
+}
+
+.moves-count {
+    font-weight: bold;
+    color: #2196f3;
+    font-size: 18px;
+}
+
+/* Стили для общего счета */
+.total-score {
     background: #e8f5e9;
-    border-color: #c8e6c9;
+    padding: 15px;
+    border-radius: 8px;
+    margin: 10px 0;
 }
 
-.opponent div:first-child {
-    color: #2e7d32;
+.total-score div:first-child {
+    color: #388e3c;
+    font-weight: bold;
+    margin-bottom: 8px;
+    text-align: center;
+    font-size: 16px;
 }
 
-.board.reversed {
-    transform: rotate(180deg);
-}
-
-.board.reversed .cell {
-    transform: rotate(180deg);
-}
-
-.board.reversed .piece {
-    transform: rotate(180deg);
-}
-
-.board.reversed .piece:hover {
-    transform: rotate(180deg) scale(1.1);
-}
-
-.board.reversed .piece.king::after {
-    transform: rotate(180deg);
-}
-
-.board {
-    transition: transform 0.3s ease;
-}
-
-.cell {
-    transition: transform 0.3s ease;
-}
-
-.piece {
-    transition: all 0.3s ease;
-    transform-origin: center;
+.highlight {
+    color: #1976d2;
+    font-weight: bold;
+    padding: 8px;
+    background: #e3f2fd;
+    border-radius: 4px;
+    margin: 5px 0;
 }
   

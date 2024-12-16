@@ -27,7 +27,8 @@ class Game {
         this.continueTurn = false;
         this.ui = new UI(this);
         this.ai = new AI(this);
-        this.ui.showColorSelection();
+        this.gameStartTime = null;
+        this.gameTime = null;
     }
 
     async login(username) {
@@ -50,15 +51,16 @@ class Game {
         this.playerColor = color;
         this.isPlayerTurn = color === 'white';
         this.currentTurn = 'white';
+        this.gameStartTime = new Date();
 
         if (this.board) {
             this.board.element.innerHTML = '';
         }
-        this.board = new Board(color);
+        this.board = new Board(this.playerColor);
 
-        this.ui.hideColorSelection();
         this.ui.updateOpponentInfo(this.opponent);
         this.ui.updateGameInfo();
+        this.ui.startTimer();
 
         if (!this.isPlayerTurn) {
             setTimeout(() => {
@@ -146,6 +148,10 @@ class Game {
         const winner = this.countPieces('white') === 0 ? 'black' : 'white';
         this.totalScore[winner]++;
         
+        const endTime = new Date();
+        const timeDiff = endTime - this.gameStartTime;
+        this.gameTime = this.formatGameTime(timeDiff);
+        
         const currentPlayer = { ...this.currentPlayer };
         
         if (currentPlayer) {
@@ -159,7 +165,14 @@ class Game {
             });
         }
         
-        this.ui.showGameOver(winner, currentPlayer);
+        this.ui.showGameOver(winner, currentPlayer, this.gameTime);
+    }
+
+    formatGameTime(ms) {
+        const seconds = Math.floor(ms / 1000);
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+        return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
     }
 
     resetGame() {
@@ -186,10 +199,13 @@ class Game {
 
         this.currentPlayer = savedPlayer;
         
-        this.ui.showColorSelection();
         if (this.currentPlayer) {
             this.ui.updatePlayerInfo(this.currentPlayer);
         }
         this.ui.updateOpponentInfo(this.opponent);
+    }
+
+    setDifficulty(level) {
+        this.ai.setDifficulty(level);
     }
 } 

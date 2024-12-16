@@ -1,76 +1,63 @@
 class Board {
     constructor(playerColor = 'white') {
-        this.state = new Array(8).fill(null).map(() => new Array(8).fill(null));
         this.element = document.getElementById('board');
-        this.playerColor = playerColor;
-        this.init();
+        this.state = Array(8).fill().map(() => Array(8).fill(null));
+        this.isReversed = playerColor === 'black';
+        
+        this.createBoard();
+        this.initializePieces();
     }
 
-    init() {
+    createBoard() {
         this.element.innerHTML = '';
-        
-        // Создаем клетки
         for (let i = 0; i < 8; i++) {
             for (let j = 0; j < 8; j++) {
-                const cell = this.createCell(i, j);
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                
+                // Если доска перевернута, меняем координаты
+                const row = this.isReversed ? 7 - i : i;
+                const col = this.isReversed ? 7 - j : j;
+                
+                cell.classList.add((row + col) % 2 === 0 ? 'cell-white' : 'cell-black');
+                cell.dataset.row = row.toString();
+                cell.dataset.col = col.toString();
+                
                 this.element.appendChild(cell);
             }
         }
+    }
 
-        // Расставляем шашки
-        if (this.playerColor === 'black') {
-            // Для черных: черные внизу, белые вверху
-            for (let row = 0; row < 8; row++) {
-                for (let col = 0; col < 8; col++) {
-                    if ((7 - row + col) % 2 !== 0) {
-                        const cell = this.getCell(7 - row, col);
-                        if (row < 3) {
-                            // Белые шашки сверху
-                            this.addPiece(cell, 'white');
-                            this.state[7 - row][col] = 'white';
-                        } else if (row > 4) {
-                            // Черные шашки снизу
-                            this.addPiece(cell, 'black');
-                            this.state[7 - row][col] = 'black';
-                        }
-                    }
+    initializePieces() {
+        // Расставляем черные шашки
+        for (let i = 0; i < 3; i++) {
+            for (let j = 0; j < 8; j++) {
+                if ((i + j) % 2 === 1) {
+                    const row = this.isReversed ? 7 - i : i;
+                    const col = this.isReversed ? 7 - j : j;
+                    this.addPiece(row, col, 'black');
                 }
             }
-            this.element.classList.add('reversed');
-        } else {
-            // Для белых: стандартная расстановка
-            for (let row = 0; row < 8; row++) {
-                for (let col = 0; col < 8; col++) {
-                    if ((row + col) % 2 !== 0) {
-                        const cell = this.getCell(row, col);
-                        if (row < 3) {
-                            // Черные шашки сверху
-                            this.addPiece(cell, 'black');
-                            this.state[row][col] = 'black';
-                        } else if (row > 4) {
-                            // Белые шашки снизу
-                            this.addPiece(cell, 'white');
-                            this.state[row][col] = 'white';
-                        }
-                    }
+        }
+
+        // Расставляем белые шашки
+        for (let i = 5; i < 8; i++) {
+            for (let j = 0; j < 8; j++) {
+                if ((i + j) % 2 === 1) {
+                    const row = this.isReversed ? 7 - i : i;
+                    const col = this.isReversed ? 7 - j : j;
+                    this.addPiece(row, col, 'white');
                 }
             }
-            this.element.classList.remove('reversed');
         }
     }
 
-    createCell(row, col) {
-        const cell = document.createElement('div');
-        cell.className = `cell ${(row + col) % 2 === 0 ? 'cell-white' : 'cell-black'}`;
-        cell.dataset.row = row;
-        cell.dataset.col = col;
-        return cell;
-    }
-
-    addPiece(cell, color) {
+    addPiece(row, col, color) {
+        const cell = this.getCell(row, col);
         const piece = document.createElement('div');
         piece.className = `piece piece-${color}`;
         cell.appendChild(piece);
+        this.state[row][col] = color;
     }
 
     getCell(row, col) {
@@ -78,30 +65,38 @@ class Board {
     }
 
     isValidMove(fromRow, fromCol, toRow, toCol, isCapture) {
+        // Проверяем, что целевая клетка черная
         if ((toRow + toCol) % 2 === 0) {
             return false;
         }
 
         const piece = this.state[fromRow][fromCol];
-        const isKing = piece?.includes('king');
+        if (!piece) return false;
 
-        const hasAnyCapture = this.hasAnyCapture(this.state[fromRow][fromCol].split('_')[0]);
+        const isKing = piece.includes('king');
+        const pieceColor = piece.split('_')[0];
+
+        // Проверяем наличие обязательных взятий
+        const hasAnyCapture = this.hasAnyCapture(pieceColor);
         if (hasAnyCapture && !isCapture) {
             return false;
         }
         
         if (!isCapture) {
+            // Обычный ход
             if (Math.abs(toRow - fromRow) !== 1 || Math.abs(toCol - fromCol) !== 1) {
                 return false;
             }
 
+            // Для обычной шашки проверяем направление движения
             if (!isKing) {
-                const direction = piece.startsWith('white') ? -1 : 1;
+                const direction = pieceColor === 'white' ? -1 : 1;
                 if (toRow - fromRow !== direction) {
                     return false;
                 }
             }
         } else {
+            // Ход с взятием
             if (Math.abs(toRow - fromRow) !== 2 || Math.abs(toCol - fromCol) !== 2) {
                 return false;
             }
@@ -132,6 +127,7 @@ class Board {
         const piece = from.querySelector('.piece');
         if (!piece) return false;
 
+        const pieceColor = piece.classList.contains('piece-black') ? 'black' : 'white';
         const isCapture = Math.abs(toRow - fromRow) === 2;
         const wasKing = piece.classList.contains('king');
         
@@ -151,13 +147,13 @@ class Board {
             this.state[toRow][toCol] = this.state[fromRow][fromCol];
             this.state[fromRow][fromCol] = null;
 
-            if ((toRow === 0 && this.state[toRow][toCol].startsWith('white')) ||
-                (toRow === 7 && this.state[toRow][toCol].startsWith('black'))) {
+            if ((toRow === 0 && pieceColor === 'white') ||
+                (toRow === 7 && pieceColor === 'black')) {
                 piece.classList.add('king');
-                this.state[toRow][toCol] = this.state[toRow][toCol].split('_')[0] + '_king';
+                this.state[toRow][toCol] = pieceColor + '_king';
             } else if (wasKing) {
                 piece.classList.add('king');
-                this.state[toRow][toCol] = this.state[toRow][toCol].split('_')[0] + '_king';
+                this.state[toRow][toCol] = pieceColor + '_king';
             }
 
             const nextCaptures = this.getAvailableCapturesForPiece(toRow, toCol);
@@ -170,13 +166,13 @@ class Board {
             this.state[toRow][toCol] = this.state[fromRow][fromCol];
             this.state[fromRow][fromCol] = null;
 
-            if ((toRow === 0 && this.state[toRow][toCol].startsWith('white')) ||
-                (toRow === 7 && this.state[toRow][toCol].startsWith('black'))) {
+            if ((toRow === 0 && pieceColor === 'white') ||
+                (toRow === 7 && pieceColor === 'black')) {
                 piece.classList.add('king');
-                this.state[toRow][toCol] = this.state[toRow][toCol].split('_')[0] + '_king';
+                this.state[toRow][toCol] = pieceColor + '_king';
             } else if (wasKing) {
                 piece.classList.add('king');
-                this.state[toRow][toCol] = this.state[toRow][toCol].split('_')[0] + '_king';
+                this.state[toRow][toCol] = pieceColor + '_king';
             }
         }
         
