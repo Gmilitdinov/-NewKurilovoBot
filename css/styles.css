@@ -23,6 +23,8 @@ body {
     margin: 20px auto;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     border-radius: 8px;
+    transition: transform 0.3s ease;
+    transform-origin: center center;
 }
 
 .cell {
@@ -32,18 +34,23 @@ body {
     justify-content: center;
     align-items: center;
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: background-color 0.2s, transform 0.3s ease;
+    transform-origin: center center;
 }
 
 .cell-white { background: #eeeed2; }
 .cell-black { background: #769656; }
 
 .piece {
+    position: relative;
     width: var(--piece-size);
     height: var(--piece-size);
     border-radius: 50%;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    transition: transform 0.2s;
+    transition: transform 0.2s, all 0.3s ease;
+    cursor: pointer;
+    user-select: none;
+    transform-origin: center center;
 }
 
 .piece:hover {
@@ -66,10 +73,18 @@ body {
     font-size: calc(var(--piece-size) * 0.7);
     color: gold;
     text-shadow: 0 0 2px #000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
 }
 
 .piece-white.king::after {
     color: goldenrod;
+    text-shadow: 0 0 2px #333;
 }
 
 .game-info {
@@ -222,15 +237,60 @@ body {
 .current-player {
     font-size: 16px;
     color: #2c3e50;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 5px;
+    margin-bottom: 15px;
 }
 
 .current-player div {
     margin: 5px 0;
 }
 
-.current-player div:first-child {
+.current-player div:nth-child(2) {
     font-weight: bold;
-    color: #2196F3;
-    font-size: 18px;
+    color: #e74c3c;
+}
+
+.opponent {
+    background: #e8f5e9;
+    border-color: #c8e6c9;
+}
+
+.opponent div:first-child {
+    color: #2e7d32;
+}
+
+.board.reversed {
+    transform: rotate(180deg);
+}
+
+.board.reversed .cell {
+    transform: rotate(180deg);
+}
+
+.board.reversed .piece {
+    transform: rotate(180deg);
+}
+
+.board.reversed .piece:hover {
+    transform: rotate(180deg) scale(1.1);
+}
+
+.board.reversed .piece.king::after {
+    transform: rotate(180deg);
+}
+
+.board {
+    transition: transform 0.3s ease;
+}
+
+.cell {
+    transition: transform 0.3s ease;
+}
+
+.piece {
+    transition: all 0.3s ease;
+    transform-origin: center;
 }
   

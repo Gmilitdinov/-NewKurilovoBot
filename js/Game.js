@@ -2,8 +2,15 @@ class Game {
     constructor() {
         this.db = new Database();
         this.currentPlayer = null;
+        this.opponent = {
+            username: 'Компьютер',
+            rating: 0,
+            gamesPlayed: 0,
+            wins: 0,
+            losses: 0
+        };
         this.board = new Board();
-        this.currentPlayer = 'white';
+        this.currentTurn = 'white';
         this.playerColor = null;
         this.isPlayerTurn = false;
         this.moveCount = {
@@ -30,6 +37,7 @@ class Game {
                 player = await this.db.addPlayer(username);
             }
             this.currentPlayer = player;
+            this.ui.updatePlayerInfo(player);
             return player;
         } catch (error) {
             console.error('Error logging in:', error);
@@ -41,33 +49,60 @@ class Game {
         console.log('Starting game with color:', color);
         this.playerColor = color;
         this.isPlayerTurn = color === 'white';
+        this.currentTurn = 'white';
+
+        if (this.board) {
+            this.board.element.innerHTML = '';
+        }
+        this.board = new Board(color);
+
         this.ui.hideColorSelection();
+        this.ui.updateOpponentInfo(this.opponent);
         this.ui.updateGameInfo();
+
         if (!this.isPlayerTurn) {
-            this.ai.makeMove();
+            setTimeout(() => {
+                this.ai.makeMove();
+            }, 500);
         }
     }
 
     makeMove(from, to) {
+        if (this.mustCapture) {
+            const fromRow = parseInt(from.dataset.row);
+            const fromCol = parseInt(from.dataset.col);
+            const toRow = parseInt(to.dataset.row);
+            const toCol = parseInt(to.dataset.col);
+            
+            if (Math.abs(toRow - fromRow) !== 2) {
+                console.log('Есть обязательное взятие!');
+                return false;
+            }
+        }
+
         const result = this.board.movePiece(from, to);
         if (result) {
-            this.moveCount[this.currentPlayer]++;
+            this.moveCount[this.currentTurn]++;
             
             if (!result.continueTurn) {
-                this.currentPlayer = this.currentPlayer === 'black' ? 'white' : 'black';
+                this.currentTurn = this.currentTurn === 'black' ? 'white' : 'black';
                 this.isPlayerTurn = !this.isPlayerTurn;
+                this.selectedPiece = null;
+                this.continueTurn = false;
             } else {
                 this.continueTurn = true;
+                this.selectedPiece = to;
             }
 
             this.checkForCaptures();
             this.ui.updateGameInfo();
+            this.ui.updateBoard();
             
             if (this.isGameOver()) {
                 this.handleGameOver();
             }
 
-            if (!this.isPlayerTurn) {
+            if (!this.isPlayerTurn && !this.continueTurn) {
                 this.ai.makeMove();
             }
             return true;
@@ -76,8 +111,16 @@ class Game {
     }
 
     checkForCaptures() {
-        this.availableCaptures = this.board.getAvailableCaptures(this.currentPlayer);
+        this.availableCaptures = this.board.getAvailableCaptures(this.currentTurn);
         this.mustCapture = this.availableCaptures.length > 0;
+        
+        if (this.continueTurn && this.selectedPiece) {
+            this.availableCaptures = this.availableCaptures.filter(cell => 
+                cell.dataset.row === this.selectedPiece.dataset.row && 
+                cell.dataset.col === this.selectedPiece.dataset.col
+            );
+        }
+        
         return this.mustCapture;
     }
 
@@ -102,18 +145,29 @@ class Game {
     handleGameOver() {
         const winner = this.countPieces('white') === 0 ? 'black' : 'white';
         this.totalScore[winner]++;
-        localStorage.setItem('whiteScore', this.totalScore.white);
-        localStorage.setItem('blackScore', this.totalScore.black);
-        if (this.currentPlayer) {
-            this.db.updatePlayerStats(this.currentPlayer.username, 
-                this.playerColor === winner);
+        
+        const currentPlayer = { ...this.currentPlayer };
+        
+        if (currentPlayer) {
+            const isWinner = this.playerColor === winner;
+            this.db.updatePlayerStats(
+                currentPlayer.username,
+                isWinner
+            ).then(async () => {
+                this.currentPlayer = await this.db.getPlayer(currentPlayer.username);
+                this.ui.updatePlayerInfo(this.currentPlayer);
+            });
         }
-        this.ui.showGameOver(winner);
+        
+        this.ui.showGameOver(winner, currentPlayer);
     }
 
     resetGame() {
+        const savedPlayer = this.currentPlayer;
+        
+        this.board.element.innerHTML = '';
         this.board = new Board();
-        this.currentPlayer = 'white';
+        this.currentTurn = 'white';
         this.playerColor = null;
         this.isPlayerTurn = false;
         this.moveCount = { white: 0, black: 0 };
@@ -121,10 +175,21 @@ class Game {
         this.availableCaptures = [];
         this.selectedPiece = null;
         this.continueTurn = false;
-        const currentPlayer = this.currentPlayer;
+
+        this.opponent = {
+            username: 'Компьютер',
+            rating: 0,
+            gamesPlayed: 0,
+            wins: 0,
+            losses: 0
+        };
+
+        this.currentPlayer = savedPlayer;
+        
         this.ui.showColorSelection();
-        if (currentPlayer) {
-            this.ui.updatePlayerInfo(currentPlayer);
+        if (this.currentPlayer) {
+            this.ui.updatePlayerInfo(this.currentPlayer);
         }
+        this.ui.updateOpponentInfo(this.opponent);
     }
 } 

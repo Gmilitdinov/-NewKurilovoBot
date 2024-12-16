@@ -9,73 +9,118 @@ class AI {
             const possibleMoves = this.getAllPossibleMoves(aiColor);
             
             if (possibleMoves.length > 0) {
-                const move = this.chooseBestMove(possibleMoves);
+                const captureMoves = possibleMoves.filter(move => move.isCapture);
+                const move = captureMoves.length > 0 ? 
+                    this.chooseBestMove(captureMoves) : 
+                    this.chooseBestMove(possibleMoves);
+
                 this.simulateMove(move.from, move.to);
+
+                if (move.isCapture) {
+                    const nextCaptures = this.game.board.getAvailableCapturesForPiece(move.to.row, move.to.col);
+                    if (nextCaptures.length > 0) {
+                        setTimeout(() => {
+                            const nextMove = {
+                                from: move.to,
+                                to: nextCaptures[0],
+                                isCapture: true
+                            };
+                            this.simulateMove(nextMove.from, nextMove.to);
+                        }, 500);
+                    }
+                }
             }
         }, 500);
     }
 
     getAllPossibleMoves(color) {
         const moves = [];
-        const captures = [];
         const board = this.game.board;
         
         for (let i = 0; i < 8; i++) {
             for (let j = 0; j < 8; j++) {
-                if (board.state[i][j] === color) {
-                    if (board.hasCapture(i, j, color)) {
-                        captures.push({
-                            from: { row: i, col: j },
-                            to: this.getCaptureMoves(i, j, color)[0]
-                        });
-                    } else {
-                        const possibleMoves = this.getRegularMoves(i, j, color);
-                        moves.push(...possibleMoves.map(move => ({
-                            from: { row: i, col: j },
-                            to: move
-                        })));
+                if (board.state[i][j]?.startsWith(color)) {
+                    const captureMoves = this.getCaptureMoves(i, j, color);
+                    moves.push(...captureMoves);
+                }
+            }
+        }
+
+        if (moves.length === 0) {
+            for (let i = 0; i < 8; i++) {
+                for (let j = 0; j < 8; j++) {
+                    if (board.state[i][j]?.startsWith(color)) {
+                        const regularMoves = this.getRegularMoves(i, j, color);
+                        moves.push(...regularMoves);
                     }
                 }
             }
         }
-        
-        return captures.length > 0 ? captures : moves;
-    }
 
-    getRegularMoves(row, col, color) {
-        const moves = [];
-        const directions = color === 'white' ? [[-1, -1], [-1, 1]] : [[1, -1], [1, 1]];
-        
-        for (let [dRow, dCol] of directions) {
-            const newRow = row + dRow;
-            const newCol = col + dCol;
-            
-            if (this.game.board.isValidPosition(newRow, newCol) && 
-                !this.game.board.state[newRow][newCol]) {
-                moves.push({ row: newRow, col: newCol });
-            }
-        }
-        
         return moves;
     }
 
     getCaptureMoves(row, col, color) {
         const moves = [];
-        const directions = color === 'white' ? [[-2, -2], [-2, 2]] : [[2, -2], [2, 2]];
-        
+        const board = this.game.board;
+        const directions = [[-2, -2], [-2, 2], [2, -2], [2, 2]];
+        const isKing = board.state[row][col]?.includes('king');
+
         for (let [dRow, dCol] of directions) {
             const newRow = row + dRow;
             const newCol = col + dCol;
-            
-            if (this.game.board.canCapture(row, col, newRow, newCol)) {
-                moves.push({ row: newRow, col: newCol });
+            const midRow = row + dRow/2;
+            const midCol = col + dCol/2;
+
+            if (!board.isValidPosition(newRow, newCol)) continue;
+            if ((newRow + newCol) % 2 === 0) continue;
+            if (board.state[newRow][newCol]) continue;
+
+            const midPiece = board.state[midRow][midCol];
+            if (midPiece && !midPiece.startsWith(color)) {
+                moves.push({
+                    from: { row, col },
+                    to: { row: newRow, col: newCol },
+                    isCapture: true
+                });
             }
         }
+
+        return moves;
+    }
+
+    getRegularMoves(row, col, color) {
+        const moves = [];
+        const board = this.game.board;
+        const isKing = board.state[row][col]?.includes('king');
         
+        const directions = isKing ? 
+            [[-1, -1], [-1, 1], [1, -1], [1, 1]] : // Для дамки
+            (color === 'white' ? [[-1, -1], [-1, 1]] : [[1, -1], [1, 1]]); // Для обычных шашек
+
+        for (let [dRow, dCol] of directions) {
+            const newRow = row + dRow;
+            const newCol = col + dCol;
+
+            if (!board.isValidPosition(newRow, newCol)) continue;
+            if ((newRow + newCol) % 2 === 0) continue;
+            if (board.state[newRow][newCol]) continue;
+
+            moves.push({
+                from: { row, col },
+                to: { row: newRow, col: newCol },
+                isCapture: false
+            });
+        }
+
         return moves;
     }
 
     chooseBestMove(moves) {
+        const captureMoves = moves.filter(move => move.isCapture);
+        if (captureMoves.length > 0) {
+            return captureMoves[Math.floor(Math.random() * captureMoves.length)];
+        }
         return moves[Math.floor(Math.random() * moves.length)];
     }
 

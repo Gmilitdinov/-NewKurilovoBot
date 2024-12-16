@@ -16,6 +16,10 @@ class UI {
         gameInfo.insertBefore(this.playerInfoDisplay, gameInfo.firstChild);
         document.querySelector('.game-info').appendChild(this.totalScoreDisplay);
         
+        this.opponentInfoDisplay = document.createElement('div');
+        this.opponentInfoDisplay.className = 'player-info';
+        gameInfo.insertBefore(this.opponentInfoDisplay, this.totalScoreDisplay);
+        
         this.initEventListeners();
         this.showLoginForm();
     }
@@ -53,7 +57,7 @@ class UI {
 
     updateGameInfo() {
         this.currentPlayerDisplay.textContent = 
-            `Ходят ${this.game.currentPlayer === 'white' ? 'белые' : 'черные'}` +
+            `Ходят ${this.game.currentTurn === 'white' ? 'белые' : 'черные'}` +
             `${this.game.mustCapture ? ' (Обязательное взятие!)' : ''}`;
         this.whiteMovesDisplay.textContent = this.game.moveCount.white;
         this.blackMovesDisplay.textContent = this.game.moveCount.black;
@@ -75,24 +79,37 @@ class UI {
     handlePieceClick(piece, cell) {
         const pieceColor = piece.classList.contains('piece-black') ? 'black' : 'white';
         
-        if (pieceColor === this.game.playerColor) {
-            if (this.game.mustCapture && !this.game.availableCaptures.includes(cell)) {
-                console.log('Есть обязательное взятие!');
-                return;
+        if (pieceColor === this.game.playerColor && this.game.isPlayerTurn) {
+            if (this.game.mustCapture) {
+                if (this.game.continueTurn && this.game.selectedPiece) {
+                    if (cell === this.game.selectedPiece) {
+                        cell.style.backgroundColor = '#baca44';
+                    }
+                    return;
+                }
+                if (!this.game.availableCaptures.includes(cell)) {
+                    console.log('Есть обязательное взятие другой шашкой!');
+                    return;
+                }
             }
             
-            if (this.game.selectedPiece) {
-                this.game.selectedPiece.style.backgroundColor = '';
-            }
+            this.updateBoard();
+            
             this.game.selectedPiece = cell;
             cell.style.backgroundColor = '#baca44';
         }
     }
 
     handleMoveClick(cell) {
-        if (this.game.makeMove(this.game.selectedPiece, cell)) {
-            this.game.selectedPiece.style.backgroundColor = '';
-            this.game.selectedPiece = null;
+        if (this.game.selectedPiece) {
+            if (this.game.makeMove(this.game.selectedPiece, cell)) {
+                if (!this.game.continueTurn) {
+                    this.updateBoard();
+                }
+            } else {
+                this.game.selectedPiece.style.backgroundColor = '';
+                this.game.selectedPiece = null;
+            }
         }
     }
 
@@ -104,15 +121,19 @@ class UI {
         `;
     }
 
-    showGameOver(winner) {
+    showGameOver(winner, player) {
         const gameOver = document.createElement('div');
         gameOver.className = 'game-over';
+        
         gameOver.innerHTML = `
             <h2>Игра окончена!</h2>
-            <p>Игрок: ${this.game.currentPlayer.username}</p>
+            <p>Игрок: ${player.username}</p>
+            <p>Противник: ${this.game.opponent.username}</p>
+            <p>Текущий рейтинг: ${player.rating || 0}</p>
             <p>Победили ${winner === 'white' ? 'белые' : 'черные'}!</p>
             <button class="new-game-btn">Новая игра</button>
         `;
+
         document.body.appendChild(gameOver);
 
         gameOver.querySelector('.new-game-btn').addEventListener('click', () => {
@@ -121,7 +142,13 @@ class UI {
         });
 
         this.totalScoreDisplay.innerHTML = this.updateTotalScore();
-        this.updatePlayerInfo(this.game.currentPlayer);
+        this.updatePlayerInfo(player);
+    }
+
+    calculateRatingChange(playerRating, opponentRating, isWinner) {
+        const K = 32;
+        const expectedScore = 1 / (1 + Math.pow(10, (opponentRating - playerRating) / 400));
+        return Math.round(K * ((isWinner ? 1 : 0) - expectedScore));
     }
 
     createLoginForm() {
@@ -173,12 +200,37 @@ class UI {
     }
 
     updatePlayerInfo(player) {
+        if (!player) return;
+        
         this.playerInfoDisplay.innerHTML = `
             <div class="current-player">
                 <div>Игрок: ${player.username}</div>
-                <div>Всего игр: ${player.gamesPlayed}</div>
-                <div>Побед: ${player.wins}</div>
+                <div>Рейтинг: ${player.rating || 0}</div>
+                <div>Всего игр: ${player.gamesPlayed || 0}</div>
+                <div>Побед: ${player.wins || 0}</div>
+                <div>Поражений: ${player.losses || 0}</div>
             </div>
         `;
+    }
+
+    updateOpponentInfo(opponent) {
+        this.opponentInfoDisplay.innerHTML = `
+            <div class="current-player opponent">
+                <div>Противник: ${opponent.username}</div>
+            </div>
+        `;
+    }
+
+    updateBoard() {
+        const cells = document.querySelectorAll('.cell');
+        cells.forEach(cell => {
+            if (cell !== this.game.selectedPiece) {
+                cell.style.backgroundColor = '';
+            }
+        });
+
+        if (this.game.continueTurn && this.game.selectedPiece) {
+            this.game.selectedPiece.style.backgroundColor = '#baca44';
+        }
     }
 } 

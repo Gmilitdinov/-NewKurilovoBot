@@ -64,9 +64,16 @@ async function handleLogin(ws, data) {
             rating: 1000,
             gamesPlayed: 0,
             wins: 0,
-            created: new Date()
+            losses: 0,
+            created: new Date(),
+            lastPlayed: new Date()
         };
         await db.collection('players').insertOne(player);
+    } else {
+        await db.collection('players').updateOne(
+            { username },
+            { $set: { lastPlayed: new Date() }}
+        );
     }
     
     connections.set(ws, { username, player });
@@ -145,6 +152,50 @@ function handleMove(ws, data) {
 
 function generateGameId() {
     return Math.random().toString(36).substring(2, 15);
+}
+
+async function handleGameEnd(winner, loser) {
+    const K = 32; // Коэффициент изменения рейтинга
+    
+    const winnerPlayer = await db.collection('players').findOne({ username: winner.username });
+    const loserPlayer = await db.collection('players').findOne({ username: loser.username });
+    
+    // Вычисляем ожидаемый результат
+    const expectedScore = 1 / (1 + Math.pow(10, (loserPlayer.rating - winnerPlayer.rating) / 400));
+    
+    // Вычисляем новые рейтинги
+    const winnerNewRating = Math.round(winnerPlayer.rating + K * (1 - expectedScore));
+    const loserNewRating = Math.round(loserPlayer.rating + K * (0 - expectedScore));
+    
+    // Обновляем статистику победителя
+    await db.collection('players').updateOne(
+        { username: winner.username },
+        {
+            $inc: { 
+                gamesPlayed: 1,
+                wins: 1
+            },
+            $set: { 
+                rating: winnerNewRating,
+                lastPlayed: new Date()
+            }
+        }
+    );
+    
+    // Обновляем статистику проигравшего
+    await db.collection('players').updateOne(
+        { username: loser.username },
+        {
+            $inc: { 
+                gamesPlayed: 1,
+                losses: 1
+            },
+            $set: { 
+                rating: loserNewRating,
+                lastPlayed: new Date()
+            }
+        }
+    );
 }
 
 const PORT = process.env.PORT || 3000;
